@@ -3,6 +3,14 @@
 ![GitHub](https://img.shields.io/github/license/facebookresearch/EGG)
 [![Python 3.6](https://img.shields.io/badge/python-3.6-blue.svg)](https://www.python.org/downloads/release/python-360/)
 
+
+# How to execute Chaabouni et al. 2020 as compared method of TCDS 2024 
+```
+bash Chaabouni2020.bash
+```
+
+-----
+
 ## Introduction
 
 EGG is a toolkit that allows researchers to quickly implement multi-agent games with discrete channel communication. In 

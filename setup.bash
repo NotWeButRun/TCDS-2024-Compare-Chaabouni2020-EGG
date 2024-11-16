@@ -1,0 +1,1 @@
+/root/.local/bin/poetry run pip install -r requirements.txt
