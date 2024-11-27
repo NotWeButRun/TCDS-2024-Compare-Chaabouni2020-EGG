@@ -30,7 +30,7 @@ from egg.zoo.compo_vs_generalization.data import (
     split_train_test,
 )
 from egg.zoo.compo_vs_generalization.intervention import Evaluator, Metrics
-
+from egg.zoo.compo_vs_generalization.tcds_data import TRAIN_DATA, TEST_DATA
 
 def get_params(params):
     parser = argparse.ArgumentParser()
@@ -195,15 +195,21 @@ def main(params):
     opts = get_params(params)
     device = opts.device
 
-    full_data = enumerate_attribute_value(opts.n_attributes, opts.n_values)
-    if opts.density_data > 0:
-        sampled_data = select_subset_V2(
-            full_data, opts.density_data, opts.n_attributes, opts.n_values
-        )
-        full_data = copy.deepcopy(sampled_data)
+    # full_data = enumerate_attribute_value(opts.n_attributes, opts.n_values)
+    # if opts.density_data > 0:
+    #     sampled_data = select_subset_V2(
+    #         full_data, opts.density_data, opts.n_attributes, opts.n_values
+    #     )
+    #     full_data = copy.deepcopy(sampled_data)
+    
+    # train, generalization_holdout = split_holdout(full_data)
+    # train, uniform_holdout = split_train_test(train, 0.1)
 
-    train, generalization_holdout = split_holdout(full_data)
-    train, uniform_holdout = split_train_test(train, 0.1)
+    ## Modify for experiment on TCDS-2024
+    train = TRAIN_DATA
+    generalization_holdout = TEST_DATA
+    uniform_holdout = TEST_DATA
+    full_data = TRAIN_DATA + TEST_DATA
 
     generalization_holdout, train, uniform_holdout, full_data = [
         one_hotify(x, opts.n_attributes, opts.n_values)
