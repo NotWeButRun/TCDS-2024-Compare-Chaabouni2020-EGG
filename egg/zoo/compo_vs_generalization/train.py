@@ -30,7 +30,7 @@ from egg.zoo.compo_vs_generalization.data import (
     split_train_test,
 )
 from egg.zoo.compo_vs_generalization.intervention import Evaluator, Metrics
-from egg.zoo.compo_vs_generalization.tcds_data import TRAIN_DATA, TEST_DATA
+from egg.zoo.compo_vs_generalization.tcds_data import TRAIN_DATA, TEST_DATA, tidyup_receiver_output
 
 def get_params(params):
     parser = argparse.ArgumentParser()
@@ -322,6 +322,13 @@ def main(params):
 
     last_epoch_interaction = early_stopper.validation_stats[-1][1]
     validation_acc = last_epoch_interaction.aux["acc"].mean()
+    
+    print(f"sender-input: {last_epoch_interaction.sender_input}")
+    print(f"message: {last_epoch_interaction.message}")
+    # print(f"receiver-output: {last_epoch_interaction.receiver_output.argmax(dim=-1)}")
+    tidyup_receiver_output(
+        opts.n_attributes, opts.n_values, last_epoch_interaction.receiver_output
+    )
 
     uniformtest_acc = holdout_evaluator.results["uniform holdout"]["acc"]
 
