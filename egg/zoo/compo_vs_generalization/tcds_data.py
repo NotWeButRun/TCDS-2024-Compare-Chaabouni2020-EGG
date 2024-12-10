@@ -28,6 +28,6 @@ import numpy as np
 def tidyup_receiver_output(n_attributes, n_values, receiver_output):
     for receiver_output_i in receiver_output:
         receiver_output_i = np.array(receiver_output_i)
-        reshaped_output = np.reshape(receiver_output_i, (n_attributes, -1))
-        assert reshaped_output.shape == (n_attributes, n_values), reshaped_output.shape
-        print(reshaped_output.argmax(axis=1))
+        reshaped_output_i = np.reshape(receiver_output_i, (n_attributes, -1))
+        assert reshaped_output_i.shape == (n_attributes, n_values), reshaped_output_i.shape
+        print(reshaped_output_i.argmax(axis=1))
