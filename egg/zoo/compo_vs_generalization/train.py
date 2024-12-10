@@ -4,6 +4,7 @@
 # LICENSE file in the root directory of this source tree.
 
 import argparse
+from argparse import Namespace
 import copy
 import json
 
@@ -30,7 +31,7 @@ from egg.zoo.compo_vs_generalization.data import (
     split_train_test,
 )
 from egg.zoo.compo_vs_generalization.intervention import Evaluator, Metrics
-from egg.zoo.compo_vs_generalization.tcds_data import TRAIN_DATA, TEST_DATA, tidyup_receiver_output
+from egg.zoo.compo_vs_generalization.tcds_data import TRAIN_DATA, get_test_data, tidyup_receiver_output
 
 def get_params(params):
     parser = argparse.ArgumentParser()
@@ -84,6 +85,9 @@ def get_params(params):
         type=float,
         default=0.99999,
         help="Early stopping threshold on accuracy (defautl: 0.99999)",
+    )
+    parser.add_argument(
+        "--exp_id", type=int, default=0, help="Experiment id (default: 0)"
     )
 
     args = core.init(arg_parser=parser, params=params)
@@ -188,6 +192,23 @@ class DiffLoss(torch.nn.Module):
 
         return loss, {"acc": acc, "acc_or": acc_or}
 
+def _build_data_loader(opts: Namespace, raw_data: list[list[int]], data_scaler: float=1)->DataLoader:
+    """
+    Added for TCDS-2024;
+    The function to build DataLoader from the training data.
+    
+    Args:
+        opts (Namespace): The options.
+        raw_data (list[list[int]]): The training data.
+        data_scaler (float): The scaler for the training data.
+    
+    Returns:
+        DataLoader: The DataLoader for the training data.
+    """ 
+    scaled_dataset: ScaledDataset = ScaledDataset(
+        one_hotify(raw_data, opts.n_attributes, opts.n_values), 1
+    )
+    return DataLoader(scaled_dataset, batch_size=opts.batch_size)
 
 def main(params):
     import copy
@@ -206,30 +227,41 @@ def main(params):
     # train, uniform_holdout = split_train_test(train, 0.1)
 
     ## Modify for experiment on TCDS-2024
-    train = TRAIN_DATA
-    generalization_holdout = TEST_DATA
-    uniform_holdout = TEST_DATA
-    full_data = TRAIN_DATA + TEST_DATA
+    # train = TRAIN_DATA
+    # generalization_holdout = TEST_DATA
+    # uniform_holdout = TEST_DATA
+    # full_data = TRAIN_DATA + TEST_DATA
 
-    generalization_holdout, train, uniform_holdout, full_data = [
-        one_hotify(x, opts.n_attributes, opts.n_values)
-        for x in [generalization_holdout, train, uniform_holdout, full_data]
-    ]
+    # generalization_holdout, train, uniform_holdout, full_data = [
+    #     one_hotify(x, opts.n_attributes, opts.n_values)
+    #     for x in [generalization_holdout, train, uniform_holdout, full_data]
+    # ]
 
-    train, validation = ScaledDataset(train, opts.data_scaler), ScaledDataset(train, 1)
-
-    generalization_holdout, uniform_holdout, full_data = (
-        ScaledDataset(generalization_holdout),
-        ScaledDataset(uniform_holdout),
-        ScaledDataset(full_data),
-    )
-    generalization_holdout_loader, uniform_holdout_loader, full_data_loader = [
-        DataLoader(x, batch_size=opts.batch_size)
-        for x in [generalization_holdout, uniform_holdout, full_data]
-    ]
+    train_data = one_hotify(TRAIN_DATA, opts.n_attributes, opts.n_values)
+    train = ScaledDataset(train_data, opts.data_scaler)
+    validation = ScaledDataset(train_data, 1)
 
     train_loader = DataLoader(train, batch_size=opts.batch_size)
     validation_loader = DataLoader(validation, batch_size=len(validation))
+
+    # generalization_holdout, uniform_holdout, full_data = (
+    #     ScaledDataset(generalization_holdout),
+    #     ScaledDataset(uniform_holdout),
+    #     ScaledDataset(full_data),
+    # )
+    # generalization_holdout_loader, uniform_holdout_loader, full_data_loader = [
+    #     DataLoader(x, batch_size=opts.batch_size)
+    #     for x in [generalization_holdout, uniform_holdout, full_data]
+    # ]
+
+    
+
+    test_data_loaders: list[DataLoader] = []
+    for pred_id in range(5):
+        test_datas_raw = get_test_data(opts.n_attributes, opts.exp_id, pred_id)
+        test_data_loaders.append(
+            _build_data_loader(opts, test_datas_raw, opts.data_scaler)
+        )
 
     n_dim = opts.n_attributes * opts.n_values
 
@@ -287,21 +319,28 @@ def main(params):
         freq=opts.stats_freq,
     )
 
-    loaders = []
-    loaders.append(
+    loaders = [
         (
-            "generalization hold out",
-            generalization_holdout_loader,
-            DiffLoss(opts.n_attributes, opts.n_values, generalization=True),
-        )
-    )
-    loaders.append(
-        (
-            "uniform holdout",
-            uniform_holdout_loader,
+            f"test_data (pred{pred_id:03})",
+            test_data_loader, 
             DiffLoss(opts.n_attributes, opts.n_values),
         )
-    )
+        for pred_id, test_data_loader in enumerate(test_data_loaders)
+    ]
+    # loaders.append(
+    #     (
+    #         "generalization hold out",
+    #         generalization_holdout_loader,
+    #         DiffLoss(opts.n_attributes, opts.n_values, generalization=True),
+    #     )
+    # )
+    # loaders.append(
+    #     (
+    #         "uniform holdout",
+    #         uniform_holdout_loader,
+    #         DiffLoss(opts.n_attributes, opts.n_values),
+    #     )
+    # )
 
     holdout_evaluator = Evaluator(loaders, opts.device, freq=0)
     early_stopper = EarlyStopperAccuracy(opts.early_stopping_thr, validation=True)
@@ -326,11 +365,12 @@ def main(params):
     print(f"sender-input: {last_epoch_interaction.sender_input}")
     print(f"message: {last_epoch_interaction.message}")
     # print(f"receiver-output: {last_epoch_interaction.receiver_output.argmax(dim=-1)}")
+    
     tidyup_receiver_output(
         opts.n_attributes, opts.n_values, last_epoch_interaction.receiver_output
     )
 
-    uniformtest_acc = holdout_evaluator.results["uniform holdout"]["acc"]
+    # uniformtest_acc = holdout_evaluator.results["uniform holdout"]["acc"]
 
     # Train new agents
     if validation_acc > 0.99:
