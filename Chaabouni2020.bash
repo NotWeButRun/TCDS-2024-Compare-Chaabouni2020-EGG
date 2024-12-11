@@ -1,4 +1,13 @@
 /root/.local/bin/poetry run python -m egg.zoo.compo_vs_generalization.train \
-    --n_values=4 --n_attributes=4 --vocab_size=200 \
-    --max_len=16 --batch_size=5120 --n_epochs=20 \
-    --sender_cell=lstm --receiver_cell=lstm --random_seed=1 --exp_id=1
+    --n_values=4 \
+    --n_attributes=4 \
+    --vocab_size=16 \
+    --max_len=16 \
+    --batch_size=4096 \
+    --n_epochs=200 \
+    --sender_cell=gru \
+    --receiver_cell=gru \
+    --sender_hidden 512 \
+    --receiver_hidden 512 \
+    --random_seed=1 \
+    --exp_id=1

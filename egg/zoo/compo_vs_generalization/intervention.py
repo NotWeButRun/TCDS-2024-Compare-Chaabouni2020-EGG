@@ -216,6 +216,8 @@ class Evaluator(core.Callback):
             self.results[loader_name] = {
                 "acc": acc / n_batches,
                 "acc_or": acc_or / n_batches,
+                "output": interaction.receiver_output.tolist(),
+                "message": interaction.message.tolist(),
             }
 
         self.results["epoch"] = self.epoch

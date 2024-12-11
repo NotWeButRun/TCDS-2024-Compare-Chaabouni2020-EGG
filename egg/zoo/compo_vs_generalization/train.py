@@ -7,6 +7,7 @@ import argparse
 from argparse import Namespace
 import copy
 import json
+import ndjson
 
 import torch
 import torch.nn.functional as F
@@ -210,6 +211,12 @@ def _build_data_loader(opts: Namespace, raw_data: list[list[int]], data_scaler: 
     )
     return DataLoader(scaled_dataset, batch_size=opts.batch_size)
 
+def get_testdata_name(pred_id: int)->str:
+    """
+    テストデータの名前を取得する関数
+    """
+    return f"test_data (pred{pred_id:03})"
+
 def main(params):
     import copy
 
@@ -321,7 +328,7 @@ def main(params):
 
     loaders = [
         (
-            f"test_data (pred{pred_id:03})",
+            get_testdata_name(pred_id),
             test_data_loader, 
             DiffLoss(opts.n_attributes, opts.n_values),
         )
@@ -362,15 +369,38 @@ def main(params):
     last_epoch_interaction = early_stopper.validation_stats[-1][1]
     validation_acc = last_epoch_interaction.aux["acc"].mean()
     
-    print(f"sender-input: {last_epoch_interaction.sender_input}")
-    print(f"message: {last_epoch_interaction.message}")
+    # print(f"sender-input: {last_epoch_interaction.sender_input}")
+    # print(f"message: {last_epoch_interaction.message}")
     # print(f"receiver-output: {last_epoch_interaction.receiver_output.argmax(dim=-1)}")
-    
-    tidyup_receiver_output(
-        opts.n_attributes, opts.n_values, last_epoch_interaction.receiver_output
-    )
 
-    # uniformtest_acc = holdout_evaluator.results["uniform holdout"]["acc"]
+    # print(tidyup_receiver_output(
+    #     opts.n_attributes, opts.n_values, last_epoch_interaction.receiver_output
+    # ))
+
+    # print("Holdout evaluation:")
+    # print(tidyup_receiver_output(
+    #     opts.n_attributes,
+    #     opts.n_values,
+    #     holdout_evaluator.results[get_testdata_name(0)]["message"],
+    # ))
+
+    ## save the results in ndjson format
+    with open(
+        f"../outputs/results_test-{opts.vocab_size:02}_exp{opts.exp_id}.ndjson",
+        "w",
+    ) as f:
+        for pred_id, _ in enumerate(test_data_loaders):       
+            results_i = holdout_evaluator.results[get_testdata_name(pred_id)]
+            results_i_output = tidyup_receiver_output(
+                opts.n_attributes, opts.n_values, results_i["output"]
+            )
+            ndjson_writer = ndjson.writer(f)
+            ndjson_writer.writerow(
+                {
+                    "message": results_i["message"],
+                    "receiver_output": results_i_output.tolist(),
+                }
+            )
 
     # Train new agents
     if validation_acc > 0.99:
