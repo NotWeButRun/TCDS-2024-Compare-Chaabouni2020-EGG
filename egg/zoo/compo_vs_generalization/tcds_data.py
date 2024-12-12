@@ -2,7 +2,6 @@
 import numpy as np
 import numpy.typing as npt
 import sys
-sys.path.append("../")
 
 import pandas as pd
 

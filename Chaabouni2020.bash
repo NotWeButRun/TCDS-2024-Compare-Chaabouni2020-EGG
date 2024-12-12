@@ -4,7 +4,7 @@
     --vocab_size=16 \
     --max_len=16 \
     --batch_size=4096 \
-    --n_epochs=200 \
+    --n_epochs=400 \
     --sender_cell=gru \
     --receiver_cell=gru \
     --sender_hidden 512 \
