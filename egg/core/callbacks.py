@@ -84,7 +84,12 @@ class ConsoleLogger(Callback):
         else:
             output_message = ", ".join(sorted([f"{k}={v}" for k, v in dump.items()]))
             output_message = f"{mode}: epoch {epoch}, loss {loss}, " + output_message
-        self.pbar.set_postfix_str(f"loss: {dump['loss']:.6f}, acc: {dump['acc']:.6f}, acc_or: {dump['acc_or']:.6f}")
+        summary_str = f"loss: {dump['loss']:.6f}, acc: {dump['acc']:.6f}, acc_or: {dump['acc_or']:.6f}"
+        self.pbar.set_postfix_str(summary_str)
+
+        if self.pbar.n % 10 == 0:
+            tqdm.write(f"epoch {self.pbar.n} -- {summary_str}")
+
 
     def on_validation_end(self, loss: float, logs: Interaction, epoch: int):
         self.aggregate_print(loss, logs, "test", epoch)

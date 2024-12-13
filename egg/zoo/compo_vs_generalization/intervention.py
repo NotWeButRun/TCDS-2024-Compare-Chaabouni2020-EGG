@@ -223,7 +223,7 @@ class Evaluator(core.Callback):
 
         self.results["epoch"] = self.epoch
         output_json = json.dumps(self.results)
-        print(output_json, flush=True)
+        # print(output_json, flush=True)
 
         game.loss = old_loss
         game.train()
