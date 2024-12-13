@@ -7,6 +7,7 @@
 import json
 
 import torch
+from tqdm import tqdm
 from scipy import spatial
 from scipy.stats import spearmanr
 

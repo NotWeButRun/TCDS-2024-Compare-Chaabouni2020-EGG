@@ -1,7 +1,7 @@
 /root/.local/bin/poetry run python -m egg.zoo.compo_vs_generalization.train \
     --n_values=4 \
     --n_attributes=4 \
-    --vocab_size=16 \
+    --vocab_size=2 \
     --max_len=16 \
     --batch_size=4096 \
     --n_epochs=400 \

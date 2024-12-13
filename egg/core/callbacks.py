@@ -13,6 +13,7 @@ from collections import OrderedDict
 from typing import Any, Dict, Iterable, List, NamedTuple, Optional, Union
 
 import torch
+from tqdm import tqdm
 import wandb
 from rich.columns import Columns
 from rich.console import RenderableType
@@ -69,6 +70,8 @@ class ConsoleLogger(Callback):
     def __init__(self, print_train_loss=False, as_json=False):
         self.print_train_loss = print_train_loss
         self.as_json = as_json
+        
+        self.pbar: tqdm = tqdm(desc="training", leave=False)
 
     def aggregate_print(self, loss: float, logs: Interaction, mode: str, epoch: int):
         dump = dict(loss=loss)
@@ -81,12 +84,13 @@ class ConsoleLogger(Callback):
         else:
             output_message = ", ".join(sorted([f"{k}={v}" for k, v in dump.items()]))
             output_message = f"{mode}: epoch {epoch}, loss {loss}, " + output_message
-        print(output_message, flush=True)
+        self.pbar.set_postfix_str(f"loss: {dump['loss']:.6f}, acc: {dump['acc']:.6f}, acc_or: {dump['acc_or']:.6f}")
 
     def on_validation_end(self, loss: float, logs: Interaction, epoch: int):
         self.aggregate_print(loss, logs, "test", epoch)
 
     def on_epoch_end(self, loss: float, logs: Interaction, epoch: int):
+        self.pbar.update(1)
         if self.print_train_loss:
             self.aggregate_print(loss, logs, "train", epoch)
 
