@@ -34,6 +34,8 @@ from egg.zoo.compo_vs_generalization.data import (
 from egg.zoo.compo_vs_generalization.intervention import Evaluator, Metrics
 from egg.zoo.compo_vs_generalization.tcds_data import TRAIN_DATA, get_test_data, tidyup_receiver_output
 
+NUM_PREDICTIONS = 10 ## TCDS-2024; Number of predictions
+
 def get_params(params):
     parser = argparse.ArgumentParser()
     parser.add_argument("--n_attributes", type=int, default=4, help="")
@@ -264,7 +266,7 @@ def main(params):
     
 
     test_data_loaders: list[DataLoader] = []
-    for pred_id in range(5):
+    for pred_id in range(NUM_PREDICTIONS):
         test_datas_raw = get_test_data(opts.n_attributes, opts.exp_id, pred_id)
         test_data_loaders.append(
             _build_data_loader(opts, test_datas_raw, opts.data_scaler)
