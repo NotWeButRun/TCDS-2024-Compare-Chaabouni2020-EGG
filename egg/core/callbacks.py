@@ -87,7 +87,11 @@ class ConsoleLogger(Callback):
         summary_str = f"loss: {dump['loss']:.6f}, acc: {dump['acc']:.6f}, acc_or: {dump['acc_or']:.6f}"
         self.pbar.set_postfix_str(summary_str)
 
-        if self.pbar.n % 10 == 0:
+        ## Added TCDS-2024; save the logs to a file
+        wandb.log(dump)
+
+        if self.pbar.n == 1:
+        # if self.pbar.n % 10 == 0:
             tqdm.write(f"epoch {self.pbar.n} -- {summary_str}")
 
 

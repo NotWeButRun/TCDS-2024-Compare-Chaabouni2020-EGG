@@ -1,10 +1,10 @@
 /root/.local/bin/poetry run python -m egg.zoo.compo_vs_generalization.train \
     --n_values=4 \
     --n_attributes=4 \
-    --vocab_size=16 \
-    --max_len=16 \
-    --batch_size=1024 \
-    --n_epochs=200 \
+    --vocab_size=4 \
+    --max_len=32 \
+    --batch_size=512 \
+    --n_epochs=10 \
     --sender_cell=gru \
     --receiver_cell=gru \
     --sender_hidden 512 \

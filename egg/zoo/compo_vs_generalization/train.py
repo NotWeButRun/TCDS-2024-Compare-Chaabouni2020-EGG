@@ -34,6 +34,8 @@ from egg.zoo.compo_vs_generalization.data import (
 from egg.zoo.compo_vs_generalization.intervention import Evaluator, Metrics
 from egg.zoo.compo_vs_generalization.tcds_data import TRAIN_DATA, get_test_data, tidyup_receiver_output
 
+import wandb
+
 NUM_PREDICTIONS = 10 ## TCDS-2024; Number of predictions
 
 def get_params(params):
@@ -220,10 +222,24 @@ def get_testdata_name(pred_id: int)->str:
     return f"test_data (pred{pred_id:03})"
 
 def main(params):
-    import copy
-
     opts = get_params(params)
     device = opts.device
+
+    ## Add TCDS-2024; record the hyperparameters and run metadata
+    wandb_train = wandb.init(
+        # set the wandb project where this run will be logged
+        project="TCDS-compare-Chaabouni2024-train",
+
+        # track hyperparameters and run metadata
+        config={
+            "learning_rate": opts.lr,
+            "batch_size": opts.batch_size,
+            "epochs": opts.n_epochs,
+            "vocab_size": opts.vocab_size,
+            "random_seed": opts.random_seed,
+            "exp_id": opts.exp_id,
+        }
+    )
 
     # full_data = enumerate_attribute_value(opts.n_attributes, opts.n_values)
     # if opts.density_data > 0:
@@ -387,6 +403,22 @@ def main(params):
     # ))
 
     ## save the results in ndjson format
+    wandb_train.finish()
+    test_wandb = wandb.init(
+        # set the wandb project where this run will be logged
+        project="TCDS-compare-Chaabouni2024-test",
+
+        # track hyperparameters and run metadata
+        config={
+            "learning_rate": opts.lr,
+            "batch_size": opts.batch_size,
+            "epochs": opts.n_epochs,
+            "vocab_size": opts.vocab_size,
+            "random_seed": opts.random_seed,
+            "exp_id": opts.exp_id,
+        }
+    )
+
     with open(
         f"../outputs/results_test-{opts.vocab_size:02}_exp{opts.exp_id}.ndjson",
         "w",
@@ -399,6 +431,14 @@ def main(params):
             ndjson_writer = ndjson.writer(f)
             ndjson_writer.writerow(
                 {
+                    "message": results_i["message"],
+                    "receiver_output": results_i_output.tolist(),
+                }
+            )
+            
+            wandb.log(
+                {
+                    "pred_id": pred_id,
                     "message": results_i["message"],
                     "receiver_output": results_i_output.tolist(),
                 }
